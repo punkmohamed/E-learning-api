@@ -2,8 +2,8 @@ const jsonServer = require('json-server');
 const cors = require('cors');
 
 const server = jsonServer.create();
-const middlewares = jsonServer.defaults();
 const router = jsonServer.router('db.json');
+const middlewares = jsonServer.defaults();
 
 // CORS options
 const corsOptions = {
@@ -14,38 +14,37 @@ const corsOptions = {
 };
 
 server.use(cors(corsOptions));
-server.options('*', cors(corsOptions));
 server.use(middlewares);
 
-// Custom middleware to handle pagination response
-server.use((req, res, next) => {
-    res.on('finish', () => {
-        const totalItems = res.getHeader('X-Total-Count'); // Get total count
-        const limit = parseInt(req.query._limit) || 10; // Get limit (default to 10)
-        const page = parseInt(req.query._page) || 1; // Get current page (default to 1)
+// Custom route for handling pagination
+server.get('/api/courses', (req, res) => {
+    const limit = parseInt(req.query._limit) || 10; // Get limit (default to 10)
+    const page = parseInt(req.query._page) || 1; // Get current page (default to 1)
 
-        // Calculate the pagination data
-        const totalPages = Math.ceil(totalItems / limit);
-        const nextPage = page < totalPages ? page + 1 : null;
-        const prevPage = page > 1 ? page - 1 : null;
+    const db = router.db; // Access the db.json file
+    const courses = db.get('courses').value(); // Get the courses array
 
-        // Add custom pagination info to the response
-        res.locals.data = {
-            data: res.locals.data,
-            prev: prevPage,
-            next: nextPage,
-            pages: totalPages,
-            currentPage: page,
-        };
+    // Calculate total count and pagination
+    const totalItems = courses.length;
+    const totalPages = Math.ceil(totalItems / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const paginatedCourses = courses.slice(startIndex, endIndex);
+
+    // Build pagination metadata
+    const prevPage = page > 1 ? page - 1 : null;
+    const nextPage = page < totalPages ? page + 1 : null;
+
+    res.json({
+        data: paginatedCourses, // Paginated data
+        prev: prevPage, // Previous page number
+        next: nextPage, // Next page number
+        pages: totalPages, // Total pages
+        currentPage: page, // Current page number
     });
-    next();
 });
 
-server.use(jsonServer.rewriter({
-    '/api/*': '/$1',
-    '/blog/:resource/:id/show': '/:resource/:id',
-}));
-
+// Handle other routes with default json-server behavior
 server.use(router);
 
 server.listen(3000, () => {
