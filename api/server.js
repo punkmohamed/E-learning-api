@@ -8,7 +8,7 @@ const middlewares = jsonServer.defaults();
 // CORS options
 const corsOptions = {
     origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Length', 'X-Total-Count'],
 };
